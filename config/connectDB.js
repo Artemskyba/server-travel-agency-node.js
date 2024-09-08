@@ -19,7 +19,7 @@ export const connectDB = async () => {
     if (!connection) {
       connection = await pool.getConnection();
     }
-    console.log('DB is connected'.green.bold);
+    console.log('DB is connected'.bgBlack.bold);
     return connection;
   } catch (err) {
     console.log(err);
