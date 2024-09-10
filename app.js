@@ -17,13 +17,6 @@ app.use(urlencoded({ extended: true }));
 
 app.use('/api/user', userRouter);
 
-// await userSignUpService({
-//   name: 'Hulio',
-//   surname: 'Iglesias',
-//   email: 'mytravelagency@meta.ua',
-//   password: '123123123',
-// });
-
 app.use((_, res) => {
   res.status(404).json({ message: 'Route not found' });
 });

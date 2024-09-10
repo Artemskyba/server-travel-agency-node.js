@@ -3,10 +3,13 @@ import { connection } from '../app.js';
 import { v4 } from 'uuid';
 import bcrypt from 'bcrypt';
 import { nodemailerService } from './nodemailerService.js';
+import { HttpError } from '../helpers/HttpError.js';
 const { SALT_NUMBER } = process.env;
 
 export const userSignUpService = expressAsyncHandler(async (registerData) => {
   const { name, surname, email, pass } = registerData;
+
+  await checkUserExistsService(email);
 
   registerData.pass = await hashPassword(pass);
   registerData.verificationToken = v4();
@@ -18,10 +21,9 @@ export const userSignUpService = expressAsyncHandler(async (registerData) => {
       signUpUserQuery,
       Object.values(registerData),
     );
-    console.log(rows);
   };
 
-  nodemailerService(email);
+  // nodemailerService(email);
 
   signUpUser();
 });
@@ -32,4 +34,20 @@ const hashPassword = async (data) => {
   return hash;
 };
 
-// !! CHECK USER EXIST SERVICE
+const checkUserExistsService = expressAsyncHandler(async (email) => {
+  const checkUserQuery = `CALL sp_findUserByEmail(?)`;
+
+  const checkExistsUSer = async () => {
+    const [[data] = rows, _] = await connection.execute(checkUserQuery, [
+      email,
+    ]);
+    return data[0];
+  };
+
+  const ifUserExists = await checkExistsUSer();
+  if (ifUserExists)
+    throw new HttpError(
+      400,
+      `User with email ${email} already exists. Please use any email.`,
+    );
+});
