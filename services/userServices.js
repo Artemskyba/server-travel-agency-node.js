@@ -23,7 +23,7 @@ export const userSignUpService = expressAsyncHandler(async (registerData) => {
     );
   };
 
-  // await nodemailerService(email, registerData.verificationToken);
+  await nodemailerService(email, registerData.verificationToken);
 
   signUpUser();
 });
@@ -35,21 +35,29 @@ const hashPassword = async (data) => {
 };
 
 const checkUserExistsService = expressAsyncHandler(async (email) => {
-  const checkUserQuery = `CALL sp_findUserByEmail(?)`;
+  const isUserExists = await findUserByEmailService(email);
+  if (isUserExists)
+    throw new HttpError(
+      400,
+      `User with email ${email} already exists. Please use any email.`,
+    );
+});
 
-  const checkExistsUSer = async () => {
-    const [[data] = rows, _] = await connection.execute(checkUserQuery, [
+const findUserByEmailService = expressAsyncHandler(async (email) => {
+  const findUserByEmailQuery = `CALL sp_findUserByEmail(?)`;
+
+  const findUserByEmail = async () => {
+    const [[data] = rows, _] = await connection.execute(findUserByEmailQuery, [
       email,
     ]);
     return data[0];
   };
 
-  const ifUserExists = await checkExistsUSer();
-  if (ifUserExists)
-    throw new HttpError(
-      400,
-      `User with email ${email} already exists. Please use any email.`,
-    );
+  const userData = findUserByEmail();
+
+  if (!userData) throw new HttpError(404, 'Not found');
+
+  return userData;
 });
 
 export const verifyUserService = expressAsyncHandler(async (identifier) => {
@@ -75,6 +83,15 @@ export const verifyUserService = expressAsyncHandler(async (identifier) => {
   if (!isUserNotVerify) throw new HttpError(404, 'Page not found');
 
   verificateUser();
+});
+
+export const resendEmailService = expressAsyncHandler(async (email) => {
+  const { verificationToken } = await findUserByEmailService(email);
+
+  if (!verificationToken)
+    throw new HttpError(400, 'Your email already verificated');
+
+  nodemailerService(email, verificationToken);
 });
 
 // !! RESEND VERIFICATION EMAIL LOGIC

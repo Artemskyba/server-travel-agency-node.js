@@ -7,7 +7,7 @@ export const verificationEmailConfigSchema = (
     from: MAIL_SERVICE_USER,
     to: email,
     subject: 'Email verification',
-    text: `Veirify your emai. https://localhost:3000/verify/${identifier}`,
+    text: `Veirify your emai. http://localhost:3000/api/user/verify/${identifier}`,
     html: `<table
       cellpadding="0"
       cellspacing="0"
@@ -44,7 +44,7 @@ export const verificationEmailConfigSchema = (
             AquaTrack App!
           </p>
           <a
-            href="https://localhost:3000/verify/${identifier}"
+            href="http://localhost:3000/api/user/verify/${identifier}"
             style="
               display: inline-block;
               background-color: #9be1a0;
