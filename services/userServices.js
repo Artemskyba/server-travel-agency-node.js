@@ -53,7 +53,7 @@ const findUserByEmailService = expressAsyncHandler(async (email) => {
     return data[0];
   };
 
-  const userData = findUserByEmail();
+  const userData = await findUserByEmail();
 
   if (!userData) throw new HttpError(404, 'Not found');
 
@@ -91,7 +91,7 @@ export const resendEmailService = expressAsyncHandler(async (email) => {
   if (!verificationToken)
     throw new HttpError(400, 'Your email already verificated');
 
-  nodemailerService(email, verificationToken);
+  await nodemailerService(email, verificationToken);
 });
 
 // !! RESEND VERIFICATION EMAIL LOGIC
