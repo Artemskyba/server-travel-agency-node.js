@@ -23,7 +23,7 @@ export const userSignUpService = expressAsyncHandler(async (registerData) => {
     );
   };
 
-  // nodemailerService(email);
+  // await nodemailerService(email, registerData.verificationToken);
 
   signUpUser();
 });
@@ -51,3 +51,30 @@ const checkUserExistsService = expressAsyncHandler(async (email) => {
       `User with email ${email} already exists. Please use any email.`,
     );
 });
+
+export const verifyUserService = expressAsyncHandler(async (identifier) => {
+  const checkUserVerifyQuery = 'CALL sp_findUserByVerificationToken(?)';
+  const verificateUserQuery = 'CALL sp_verificateUser(?)';
+
+  const checkUSerVerify = async () => {
+    const [[data] = rows, _] = await connection.execute(checkUserVerifyQuery, [
+      identifier,
+    ]);
+
+    return data[0];
+  };
+
+  const verificateUser = async () => {
+    const [rows, _] = await connection.execute(verificateUserQuery, [
+      identifier,
+    ]);
+  };
+
+  const isUserNotVerify = await checkUSerVerify();
+
+  if (!isUserNotVerify) throw new HttpError(404, 'Page not found');
+
+  verificateUser();
+});
+
+// !! RESEND VERIFICATION EMAIL LOGIC

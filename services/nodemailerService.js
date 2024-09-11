@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { HttpError } from '../helpers/HttpError.js';
+import { verificationEmailConfigSchema } from '../schemas/mailShemas.js';
 
 const {
   MAIL_SERVICE_HOST,
@@ -8,7 +9,7 @@ const {
   MAIL_SERVICE_PASS,
 } = process.env;
 
-export const nodemailerService = async (email) => {
+export const nodemailerService = async (email, idenifier) => {
   try {
     const transporter = nodemailer.createTransport({
       host: MAIL_SERVICE_HOST,
@@ -20,15 +21,9 @@ export const nodemailerService = async (email) => {
       },
     });
 
-    const emailConfig = {
-      from: MAIL_SERVICE_USER,
-      to: email,
-      subject: 'Nodemailer test',
-      text: 'Test email',
-    };
-
-    await transporter.sendMail(emailConfig);
-    console.log('Complited');
+    await transporter.sendMail(
+      verificationEmailConfigSchema(MAIL_SERVICE_USER, email, idenifier),
+    );
   } catch (err) {
     throw new HttpError(500, err);
   }
