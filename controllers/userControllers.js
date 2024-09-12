@@ -15,6 +15,7 @@ export const signUpUser = expressAsyncHandler(async (req, res) => {
 
 export const verifyUser = expressAsyncHandler(async (req, res) => {
   const { identifier } = req.params;
+
   await verifyUserService(identifier);
 
   res.status(200).json({

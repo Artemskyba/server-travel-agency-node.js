@@ -1,31 +1,22 @@
 import expressAsyncHandler from 'express-async-handler';
-import { connection } from '../app.js';
 import { v4 } from 'uuid';
 import bcrypt from 'bcrypt';
 import { nodemailerService } from './nodemailerService.js';
 import { HttpError } from '../helpers/HttpError.js';
+import User from '../models/userModel.js';
 const { SALT_NUMBER } = process.env;
 
 export const userSignUpService = expressAsyncHandler(async (registerData) => {
-  const { name, surname, email, pass } = registerData;
+  const { email, pass } = registerData;
 
   await checkUserExistsService(email);
 
   registerData.pass = await hashPassword(pass);
   registerData.verificationToken = v4();
 
-  const signUpUserQuery = 'CALL sp_signUpUser(?, ?, ?, ?, ?)';
-
-  const signUpUser = async () => {
-    const [rows, _] = await connection.execute(
-      signUpUserQuery,
-      Object.values(registerData),
-    );
-  };
-
   await nodemailerService(email, registerData.verificationToken);
 
-  signUpUser();
+  await User.create(registerData);
 });
 
 const hashPassword = async (data) => {
@@ -35,7 +26,7 @@ const hashPassword = async (data) => {
 };
 
 const checkUserExistsService = expressAsyncHandler(async (email) => {
-  const isUserExists = await findUserByEmailService(email);
+  const isUserExists = await User.findOne({ where: { email: email } });
   if (isUserExists)
     throw new HttpError(
       400,
@@ -43,55 +34,26 @@ const checkUserExistsService = expressAsyncHandler(async (email) => {
     );
 });
 
-const findUserByEmailService = expressAsyncHandler(async (email) => {
-  const findUserByEmailQuery = `CALL sp_findUserByEmail(?)`;
-
-  const findUserByEmail = async () => {
-    const [[data] = rows, _] = await connection.execute(findUserByEmailQuery, [
-      email,
-    ]);
-    return data[0];
-  };
-
-  const userData = await findUserByEmail();
-
-  if (!userData) throw new HttpError(404, 'Not found');
-
-  return userData;
-});
-
 export const verifyUserService = expressAsyncHandler(async (identifier) => {
-  const checkUserVerifyQuery = 'CALL sp_findUserByVerificationToken(?)';
-  const verificateUserQuery = 'CALL sp_verificateUser(?)';
-
-  const checkUSerVerify = async () => {
-    const [[data] = rows, _] = await connection.execute(checkUserVerifyQuery, [
-      identifier,
-    ]);
-
-    return data[0];
-  };
-
-  const verificateUser = async () => {
-    const [rows, _] = await connection.execute(verificateUserQuery, [
-      identifier,
-    ]);
-  };
-
-  const isUserNotVerify = await checkUSerVerify();
+  const isUserNotVerify = await User.findOne({
+    where: { verificationToken: identifier },
+  });
 
   if (!isUserNotVerify) throw new HttpError(404, 'Page not found');
 
-  verificateUser();
+  await User.update(
+    { verificationToken: null },
+    { where: { verificationToken: identifier } },
+  );
 });
 
 export const resendEmailService = expressAsyncHandler(async (email) => {
-  const { verificationToken } = await findUserByEmailService(email);
+  const userData = await User.findOne({ where: { email: email } });
 
-  if (!verificationToken)
+  if (!userData) throw new HttpError(404, 'Not found');
+
+  if (!userData.verificationToken)
     throw new HttpError(400, 'Your email already verificated');
 
   await nodemailerService(email, verificationToken);
 });
-
-// !! RESEND VERIFICATION EMAIL LOGIC
