@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import { nodemailerService } from './nodemailerService.js';
 import { HttpError } from '../helpers/HttpError.js';
 import User from '../models/userModel.js';
+import { findOneByFilter, updateValuesByFilter } from '../config/api.js';
 const { SALT_NUMBER } = process.env;
 
 export const userSignUpService = expressAsyncHandler(async (registerData) => {
@@ -26,7 +27,7 @@ const hashPassword = async (data) => {
 };
 
 const checkUserExistsService = expressAsyncHandler(async (email) => {
-  const isUserExists = await User.findOne({ where: { email: email } });
+  const isUserExists = await findOneByFilter({ email: email });
   if (isUserExists)
     throw new HttpError(
       400,
@@ -35,20 +36,20 @@ const checkUserExistsService = expressAsyncHandler(async (email) => {
 });
 
 export const verifyUserService = expressAsyncHandler(async (identifier) => {
-  const isUserNotVerify = await User.findOne({
-    where: { verificationToken: identifier },
+  const isUserNotVerify = await findOneByFilter({
+    verificationToken: identifier,
   });
 
   if (!isUserNotVerify) throw new HttpError(404, 'Page not found');
 
-  await User.update(
+  await updateValuesByFilter(
     { verificationToken: null },
-    { where: { verificationToken: identifier } },
+    { verificationToken: identifier },
   );
 });
 
 export const resendEmailService = expressAsyncHandler(async (email) => {
-  const userData = await User.findOne({ where: { email: email } });
+  const userData = await findOneByFilter({ email: email });
 
   if (!userData) throw new HttpError(404, 'Not found');
 
@@ -57,3 +58,5 @@ export const resendEmailService = expressAsyncHandler(async (email) => {
 
   await nodemailerService(email, verificationToken);
 });
+
+export const forgotEmailService = expressAsyncHandler(async () => {});
